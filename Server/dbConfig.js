@@ -24,6 +24,7 @@ knex.schema
           table.string('accessToken', 200);
           table.string('hash', 200);
           table.integer('guest_event_id');
+          table.string('subscription', 500);
         })
         .then(res => {
           console.log(res);

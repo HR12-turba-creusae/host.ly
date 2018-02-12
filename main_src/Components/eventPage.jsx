@@ -25,6 +25,8 @@ class EventPage extends React.Component {
   }
 
    render() {
+    //  console.log('users', users);
+    //  console.log('is guest query working', this.props.guestsQuery);
     if (this.props.guestsQuery){
       if (this.props.guestsQuery.loading){
         return <div>Loading...</div>
@@ -34,7 +36,8 @@ class EventPage extends React.Component {
       }
       if (this.props.location.state.event === undefined) {
         return null;
-      } else {
+      } 
+      if (this.props.guestsQuery.event){
         return (
             <EditEvent 
               event={this.props.location.state.event}
@@ -44,9 +47,11 @@ class EventPage extends React.Component {
             />
          )
       }
-    } else if (!this.props.guestsQuery){
+  
       return null
-    }
+      
+    } 
+    return null
   }
 }
 

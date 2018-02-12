@@ -6,6 +6,8 @@ import PropTypes from 'prop-types';
 
 import EventList from './eventList';
 
+
+
 class Dashboard extends React.Component {
   constructor(props) {
     super(props);
@@ -31,10 +33,12 @@ class Dashboard extends React.Component {
         return <div>Error2</div>;
       }
 
-      if (this.props.dashboardQuery.loading && !this.props.dashboardQuery.users) {
+      if (this.props.dashboardQuery.loading && !this.props.dashboardQuery.user) {
         return <div>Loading</div>;
       }
-
+      
+      
+      if (this.props.dashboardQuery.user)
       return (
         <div>
           <h1 style={{ textAlign: 'center', fontFamily: 'Noto Sans' }}>
@@ -106,6 +110,5 @@ Dashboard.propTypes = {
   currentGuest: PropTypes.shape({}).isRequired,
   dashboardQuery: PropTypes.shape({}).isRequired,
 };
-
 
 export default withRouter(DashboardWithData);

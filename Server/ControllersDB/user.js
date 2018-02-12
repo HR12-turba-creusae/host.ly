@@ -133,7 +133,7 @@ const userController = {
       .where('id', id)
       .del();
   },
-  editField: (id, field, newValue) => {
+  editField: function(id, field, newValue) {
     return knex('user')
       .where('id', id)
       .update(field, newValue)
@@ -150,10 +150,14 @@ const userController = {
         return ['editfield error2', error];
       });
   },
-  editFields: (id, obj) => {
+  editFields: function(id, obj) {
     return knex('user')
       .where('id', id)
       .update(obj);
+  },
+  saveSubscription: (id, subscription) => {
+    return knex('user')
+    .where('id')
   }
 };
 
