@@ -69,6 +69,8 @@ class EventPage extends React.Component {
 
 
    render() {
+    //  console.log('users', users);
+    //  console.log('is guest query working', this.props.guestsQuery);
     if (this.props.guestsQuery){
       if (this.props.guestsQuery.loading && !this.props.guestsQuery.event){
         return (<Loader 
@@ -87,6 +89,7 @@ class EventPage extends React.Component {
       if (this.props.location.state.event === undefined) {
         return null;
       } 
+<<<<<<< HEAD
 
       if (this.props.guestsQuery.event){
 
@@ -138,6 +141,9 @@ class EventPage extends React.Component {
       }
 
       if (this.props.checkEvent.user){
+=======
+      if (this.props.guestsQuery.event){
+>>>>>>> feature
         return (
             <EditEvent
               event={this.props.checkEvent.user.lastEvent}
@@ -147,8 +153,15 @@ class EventPage extends React.Component {
             />
          )
       }
+<<<<<<< HEAD
       return null
     }
+=======
+  
+      return null
+      
+    } 
+>>>>>>> feature
     return null
   }
 }

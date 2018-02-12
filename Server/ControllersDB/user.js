@@ -142,7 +142,7 @@ const userController = {
       .then(x => x)
       .catch(err => err)
   },
-  editField: (id, field, newValue) => {
+  editField: function(id, field, newValue) {
     return knex('user')
       .where('id', id)
       .update(field, newValue)
@@ -160,9 +160,10 @@ const userController = {
         return ['editfield error2', error];
       });
   },
-  editFields: (id, obj) => {
+  editFields: function(id, obj) {
     return knex('user')
       .where('id', id)
+<<<<<<< HEAD
       .update(obj)
       .then((result) => {
         this.getUserById(id)
@@ -176,6 +177,13 @@ const userController = {
       .catch(error => {
         return ['editfield error2', error];
       });
+=======
+      .update(obj);
+  },
+  saveSubscription: (id, subscription) => {
+    return knex('user')
+    .where('id')
+>>>>>>> feature
   }
 };
 
