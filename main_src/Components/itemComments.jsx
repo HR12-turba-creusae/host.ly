@@ -3,20 +3,22 @@ import { graphql, compose } from 'react-apollo';
 import gql from 'graphql-tag';
 
 import ItemComment from './itemComment.jsx'
+import { addComment } from '../mutations.js'
+import { COMMENTS_QUERY } from '../queries.js'
 
 class ItemComments extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      comment: ''
-    }
+      comment: '',
+    };
 
-    this.onInputChange = this.onInputChange.bind(this)
-    this.onButtonClick = this.onButtonClick.bind(this)
+    this.onInputChange = this.onInputChange.bind(this);
+    this.onButtonClick = this.onButtonClick.bind(this);
   }
 
   onInputChange(e) {
-    this.setState({ comment: e.target.value })
+    this.setState({ comment: e.target.value });
   }
 
   onButtonClick() {
@@ -28,7 +30,6 @@ class ItemComments extends React.Component {
         event_id: this.props.eventId
       }
     }).then(result => {
-      console.log('result', result)
       this.props.itemComments.refetch()
     })
   }
@@ -40,74 +41,41 @@ class ItemComments extends React.Component {
 
     if (this.props.itemComments.error) {
       this.props.itemComments.refetch()
-      console.log(this.props.itemComments.error)
+      console.log('error', this.props.itemComments.error)
       return <div>Error!</div>
     }
 
-    return (
-      <div>
-        <ul>
-          {this.props.itemComments.item.comments.map(itemComment => {
-            return <ItemComment itemComment={itemComment} />
-          })}
-        </ul>
-        <input 
-          type="text" 
-          value={this.state.comment}
-          onChange={this.onInputChange}
-        />
-        <button
-          onClick={this.onButtonClick}
-        >Comment</button>
-      </div>
-    );
+    if (this.props.itemComments.item) {
+      return (
+        <div>
+          <ul>
+            {this.props.itemComments.item.comments.map(itemComment => {
+              return <ItemComment itemComment={itemComment} />
+            })}
+          </ul>
+          <input 
+            type="text" 
+            value={this.state.comment}
+            onChange={this.onInputChange}
+          />
+          <button onClick={this.onButtonClick}>Comment</button>
+        </div>
+      );
+    }
+
+    return null
   }
 }
 
-const getItemComments = gql`
-  query itemComments($id: Int) {
-    item(id: $id) {
-      comments {
-        id
-        content
-        likes
-        user_id
-        event_id
-        item_id
-        user {
-          name
-        }
-      }
-    }
-  }
-`;
-
-const addComment = gql`
-  mutation addComment(
-    $content: String!,
-    $user_id: Int!,
-    $item_id: Int!,
-    $event_id: Int!
-  ) {
-    addComment(
-      content: $content,
-      user_id: $user_id,
-      item_id: $item_id,
-      event_id: $event_id
-    ) {
-      id
-    }
-  }
-`;
 
 const GqlItemComments = compose(
-  graphql(getItemComments, {
-    options: props => {
+  graphql(COMMENTS_QUERY, {
+    options: (props) => {
       return { variables: { id: props.itemId } };
     },
     name: 'itemComments'
   }),
-  graphql(addComment, {name: 'addComment'})
+  graphql(addComment, { name: 'addComment' }),
 )(ItemComments);
 
 export default GqlItemComments;

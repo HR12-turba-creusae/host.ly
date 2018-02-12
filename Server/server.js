@@ -6,6 +6,11 @@ const path = require('path');
 const graphql = require('graphql');
 const knex = require('./dbConfig.js').knex;
 const axios = require('axios');
+const webpush = require('web-push');
+const db = require('./ControllersDB/mainController.js');
+
+//  vapid keys
+const vapidKeys = require('../main_dist/swConfig');
 
 // auth dependencies
 const passportSetup = require('./passportConfig/passport-setup');
@@ -50,34 +55,85 @@ app.use('/eventPage/:id', express.static(path.join(__dirname, '../guest_dist')))
 
 //contacts///
 
-app.get('/contacts:id', function(req, res) {
-  knex
-    .select('accessToken')
-    .from('user')
-    .where('id', 24)
-    .then(res => {
-      console.log('res ', res);
-    });
-
-  axios
-    .get(
-      'https://www.google.com/m8/feeds/contacts/default/full?alt=json&access_token=' +
-        accessToken
-    )
-    .then(response => console.log('resonse ', response.data.feed.entry))
-    .catch(err => ['err in get ', err]);
-});
+app.post('/contacts', function(req, res) {
+  console.log('are we in the post request')
+  axios.get(`https://www.google.com/m8/feeds/contacts/default/thin?access_token=${req.body.accessToken}&alt=json&max-results=500&v=3.0`)
+    .then(response => {
+      console.log('response.data.feed', response.data.feed)
+      res.json(response.data.feed)
+    })
+    .catch(error => {
+      console.log(error)
+      return error 
+    })
+})
 
 app.get('/user', function(req, res) {
+  console.log('re.user', req.user)
   if (req.user === undefined) {
     // The user is not logged in
     res.json({});
   } else {
+    console.log('user info from /user', req.user);
     res.json({
       user: req.user
     });
   }
 });
+
+//check if valid subscription
+
+// const isValidSaveRequest = (req, res) => {
+//   // Check the request body has at least an endpoint.
+//   if (!req.body || !req.body.endpoint) {
+//     // Not a valid subscription.
+//     res.status(400);
+//     res.setHeader('Content-Type', 'application/json');
+//     res.send(JSON.stringify({
+//       error: {
+//         id: 'no-endpoint',
+//         message: 'Subscription must have an endpoint.'
+//       }
+//     }));
+//     return false;
+//   }
+//   return true;
+// };
+
+// save subscription sent from service worker
+app.post('/api/save-subscription/', function (req, res) {
+  console.log('CLIENT SENT FOLLOWING SUBSCR INFO', req.body);
+  // if (!isValidSaveRequest(req, res)) {
+  //   return;
+  // }
+  let userId = req.body.userId,
+  subscription = JSON.stringify(req.body.subscription);
+
+  db.user.editField(userId, "subscription", subscription)
+    .then(result => {
+      console.log('user updated with subscription data', result)
+      res.send(JSON.stringify({ data: { success: true } }));
+    })
+    .catch(function(err) {
+        res.status(500);
+        res.setHeader('Content-Type', 'application/json');
+        res.send(JSON.stringify({
+          error: {
+            id: 'unable-to-save-subscription',
+            message: 'The subscription was received but we were unable to save it to our database.'
+          }
+        }));
+      });
+});
+
+// set up push to client
+
+webpush.setVapidDetails(
+  'mailto:mavcro@gmail.com',
+  vapidKeys.public,
+  vapidKeys.private
+);
+
 
 // graphql //
 ////////////
@@ -88,6 +144,8 @@ app.use(
   expressGraphQL({
     schema: schema,
     graphiql: true,
+    // Connection: 'keep-alive',
+
     //this allows the graphiql interface (GQL's postman) to load in browser
     //to access: 'localhost:4000/graphiql'
     formatError: error => ({

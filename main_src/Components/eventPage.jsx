@@ -1,95 +1,199 @@
 import React from 'react';
+import ItemList from './itemList.jsx';
+import EventFocus from './eventFocus.jsx';
+import EditEventPage from './editEventPage.jsx';
+import { editEventFields } from '../mutations';
+// import ItemList from './itemList.jsx';
+import Map from './map.jsx';
 import { withRouter } from 'react-router';
-import { Route } from 'react-router-dom';
-import { graphql } from 'react-apollo';
+import { Switch, Route, browserHistory } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { graphql, compose } from 'react-apollo';
+import {GoogleApiWrapper} from 'google-maps-react'
 import gql from 'graphql-tag';
 import FlatButton from 'material-ui/FlatButton';
+import PlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-places-autocomplete'
+import Loader from 'react-loader-spinner'
+import { GUESTS_QUERY, CHECK_EVENT_QUERY } from '../queries.js'
+import { saveEvent } from '../mutations.js'
 
-import ItemList from './itemList.jsx';
+
 
 class EventPage extends React.Component {
   constructor(props) {
     super(props);
-
     this.state = {
-      guests: ['Bob', 'Joe'],
-    };
+      name: '',
+      date: null,
+      location: '',
+      img: '',
+      id: '',
+      hostId: '',
+      time: '',
+      currentlyEditing : false,
+      event : ''
+
+    }
+    this.refresh = this.refresh.bind(this)
+    this.toggleEditState = this.toggleEditState.bind(this)
+    this.updateEventState = this.updateEventState.bind(this)
   }
 
-  clickAttending() {
+ refresh(){
+    this.props.guestsQuery ? this.props.guestsQuery.refetch() : this.props.checkEvent.refetch()
+  }
+
+  componentWillReceiveProps(next){
+    console.log('next',next)
     this.setState({
-      guests: [...this.state.guests, this.props.currentUser.name],
-    });
+      event: next.location.state ? next.location.state.event : next.checkEvent.user.lastEvent
+    }, () => {
+      console.log('params', this.props.currentUser.id, this.state.event)
+      this.props.saveEvent({
+        variables : {
+          id: this.props.currentUser.id,
+          lastEvent: this.state.event.id
+        }
+      })
+    })
   }
 
-  clickNotAttending() {
-    window.location = '/';
+
+  toggleEditState() {
+    this.setState({currentlyEditing: !this.state.currentlyEditing })
   }
 
-  render() {
-    if (this.props.location.state.event === undefined) {
-      return null;
+  updateEventState(object) {
+    this.setState(object)
+  }
+
+
+   render() {
+    //  console.log('users', users);
+    //  console.log('is guest query working', this.props.guestsQuery);
+    if (this.props.guestsQuery){
+      if (this.props.guestsQuery.loading && !this.props.guestsQuery.event){
+        return (<Loader 
+          type="Puff"
+          color="#00BFFF"
+          height="100"	
+          width="100"
+          />   
+        );
+      }
+      
+      if (this.props.guestsQuery.error && !this.props.guestsQuery.event){
+        return <div>Error</div>
+      }
+
+      if (this.props.location.state.event === undefined) {
+        return null;
+      } 
+<<<<<<< HEAD
+
+      if (this.props.guestsQuery.event){
+
+
+      return this.state.currentlyEditing ?
+        (
+          <div>
+            <EditEventPage
+            event={this.props.location.state.event}
+            currentUser={this.props.currentUser}
+            guests={this.props.guestsQuery.event.users}
+            refresh={this.refresh}
+            editingState={this.editingState}
+            toggleEditState={this.toggleEditState}
+            editEventFields={this.props.editEventFields}
+            updateEventState={this.updateEventState}
+            />
+          </div>
+         ) : (
+          <div>
+            <EventFocus
+            event={this.props.location.state.event}
+            currentUser={this.props.currentUser}
+            guests={this.props.guestsQuery.event.users}
+            refresh={this.refresh}
+            toggleEditState={this.toggleEditState}
+            name={this.state.name}
+            date={this.state.date}
+            location={this.state.location}
+            description={this.state.description}
+            img={this.state.img}
+            id={this.state.id}
+            hostId={this.state.hostId}
+            time={this.state.time}
+            />
+          </div>
+         );
+      }
+      return null
     }
 
-    const { event } = this.props.location.state;
-    console.log(this.props)
-    return (
-      <div style={{ fontFamily: 'Noto Sans' }}>
-        <div style={{ textAlign: 'center', align: 'center' }}>
-          <FlatButton
-            style={{ textAlign: 'center', align: 'center' }}
-            onClick={this.clickAttending}
-            label="I'll be there"
-          />
-          <FlatButton
-            style={{ textAlign: 'center', align: 'center' }}
-            onClick={this.clickNotAttending}
-            label="Hell nah, I aint coming"
-          />
-        </div>
-        <div style={{ textAlign: 'center' }} className="eventPage">
-          <h1 className="eventPage">{event.name}</h1>
-          <div className="eventPage">{event.location}</div>
-          <div className="eventPage">{event.date}</div>
-          <div className="eventPage">{event.description}</div>
-          <div>
-            <h2>Who's Coming</h2>
-            <ul>
-              {this.state.guests.map((name, id) => (
-                <div>
-                  <h3>{name}</h3>
-                </div>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2>Item Registery</h2>
-            <h3>Click on an item to claim it</h3>
-            <ItemList
+    if(this.props.checkEvent){
+      if (this.props.checkEvent.loading && !this.props.checkEvent.user){
+        return <div>Loading...</div>
+      }
+      
+      if (this.props.checkEvent.error && !this.props.checkEvent.user){
+        return <div>Error</div>
+      }
+
+      if (this.props.checkEvent.user){
+=======
+      if (this.props.guestsQuery.event){
+>>>>>>> feature
+        return (
+            <EditEvent
+              event={this.props.checkEvent.user.lastEvent}
               currentUser={this.props.currentUser}
-              event={this.props.location.state.event}
+              guests={this.props.checkEvent.user.lastEvent.users}
+              refresh={this.refresh}
             />
-            <ul />
-          </div>
-          <img style={{ height: '400px', width: '400px' }} src={event.img} alt="" />
-        </div>
-      </div>
-    );
+         )
+      }
+<<<<<<< HEAD
+      return null
+    }
+=======
+  
+      return null
+      
+    } 
+>>>>>>> feature
+    return null
   }
 }
 
-const NAME_QUERY = gql`
-  query nameQuery($id: String) {
-    user(hash: $id) {
-      name
-    }
-  }
-`;
 
-const EventPageWithData = graphql(NAME_QUERY, {
-  skip: props => typeof props.currentUser !== 'string',
-  options: props => ({ variables: { id: props.currentUser } }),
-  name: 'nameGuest',
-})(EventPage);
+const EventPageWithData = compose(
+  graphql(GUESTS_QUERY, {
+    skip: props => props.location.state === undefined,  
+    options: props => ({ variables: { id: props.location.state.event.id } }),
+    name: 'guestsQuery',
+  }), 
+  graphql(saveEvent, {
+    name: 'saveEvent'
+  }), 
+  graphql(editEventFields, { name: 'editEventFields' }),
+  graphql(CHECK_EVENT_QUERY, {
+    name: 'checkEvent', 
+     options: props => ({ variables: { id: props.currentUser.id } }),
+    skip: props => props.location.state !== undefined 
+  }))(EventPage);
 
 export default withRouter(EventPageWithData);
+
+
+// const EventFocusWithData = compose(
+//   graphql(confirmPresence, { name: 'confirmPresence' }),
+//   graphql(denyPresence, { name: 'denyPresence' }),
+//   GoogleApiWrapper({
+//     apiKey: 'AIzaSyCcyYySdneaabfsmmARXqAfGzpn9DCZ3dg',
+//     apiKey: 'AIzaSyCDVd2ErtvbrNJht5TENmZ54E9mMECUviA'
+//   })
+// )(EventFocus);
+
+// export default EventFocusWithData
+

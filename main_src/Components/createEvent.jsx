@@ -2,18 +2,16 @@ import React from 'react';
 import { graphql, compose } from 'react-apollo';
 import gql from 'graphql-tag';
 import TextField from 'material-ui/TextField';
-// import DateTimePicker from 'material-ui-datetimepicker'
-// import TimeInput from 'material-ui-time-picker'
 import DateTimePicker from 'material-ui-datetimepicker';
 import DatePickerDialog from 'material-ui/DatePicker/DatePickerDialog'
 import TimePickerDialog from 'material-ui/TimePicker/TimePickerDialog';
 import FlatButton from 'material-ui/FlatButton';
+import AutoComplete from 'material-ui/AutoComplete';
 
 import Dropzone from 'react-dropzone';
 import request from 'superagent';
 import { withRouter } from 'react-router';
-import PropTypes from 'prop-types';
-import ReactRouterPropTypes from 'react-router-prop-types';
+import { addItems, addRecipients, addEvent } from '../mutations.js'
 
 const CLOUDINARY_UPLOAD_PRESET = 'gvmf858k';
 const CLOUDINARY_UPLOAD_URL =
@@ -43,16 +41,22 @@ class CreateEvent extends React.Component {
       description: '',
       currentItem: '',
       items: [],
+      searchNames: '',
       guestName: '',
       guestEmail: '',
       guests: [],
       uploadedFileCloudinaryUrl: '',
+      endTime: '',
+      dateTimeStart: '', 
+      dateTimeEnd: ''
     };
 
     this.handleItems = this.handleItems.bind(this);
     this.submitForm = this.submitForm.bind(this);
     this.addGuest = this.addGuest.bind(this);
     this.onImageDrop = this.onImageDrop.bind(this);
+    this.handleContacts = this.handleContacts.bind(this);
+    this.handleUpdateSearch = this.handleUpdateSearch.bind(this);
   }
 
   onImageDrop(files) {
@@ -87,7 +91,21 @@ class CreateEvent extends React.Component {
       guests: this.state.guests.concat([
         `${this.state.guestName}*${this.state.guestEmail}`,
       ]),
+      guestName: '',
+      guestEmail: '',
+      searchNames: ''
     });
+  }
+
+  handleUpdateSearch(e) {
+    this.setState({searchNames: e})
+  }
+
+  handleContacts(chosenRequest, index) {
+    this.setState({
+      guestName: chosenRequest,
+      guestEmail: this.props.emails[index]
+    })
   }
 
 
@@ -101,8 +119,8 @@ class CreateEvent extends React.Component {
 
       alert('All fields must be entered!')
     } else {
-    const { name, location, date, time, description, uploadedFileCloudinaryUrl } = this.state;
-    console.log('here is state ', this.state)
+    const { name, location, date, time, description, uploadedFileCloudinaryUrl, endTime, dateTimeStart, dateTimeEnd} = this.state;
+
     this.props
       .addEvent({
         variables: {
@@ -112,11 +130,11 @@ class CreateEvent extends React.Component {
           location,
           img: uploadedFileCloudinaryUrl,
           time,
-          date
+          date, 
+          endTime
         }
       })
       .then(event => {
-
         this.props
           .addItems({
             variables: {
@@ -125,24 +143,29 @@ class CreateEvent extends React.Component {
             }
           })
           .then(() => {
-
             this.props
               .addRecipients({
                 variables: {
                   nameEmail: this.state.guests,
                   event_id: event.data.addEvent.id,
-                  id: this.props.currentUser.id
+                  id: this.props.currentUser.id, 
+                  dateTimeStart, 
+                  dateTimeEnd
                 }
               })
               .then(() => {
+                // if (this.state.items === [] || this.state.items) {
                 this.props.history.push({
                   pathname: '/eventPage',
                   state: { event: event.data.addEvent }
                 });
-              });
-          });
+              // }
+            })
+              .catch(error => console.log(error))
+          })
+          .catch(error => console.log(error))
       })
-      .catch(error => error);
+      .catch(error => console.log(error));
     }
   }
 
@@ -220,18 +243,24 @@ class CreateEvent extends React.Component {
         />
         <br />
         <br />
-        <TextField
-          value={this.state.guestName}
-          type="text"
-          placeholder="Who do you not hate?"
-          onChange={e => this.setState({ guestName: e.target.value })}
+
+        <AutoComplete
+          floatingLabelText="Invite Some Peeps"
+          searchText={this.state.searchNames}
+          filter={AutoComplete.fuzzyFilter}
+          dataSource={this.props.contacts}
+          maxSearchResults={5}
+          onNewRequest={this.handleContacts}
+          onUpdateInput={this.handleUpdateSearch}
         />
+
         <TextField
           value={this.state.guestEmail}
           type="text"
           placeholder="What is their email?"
           onChange={e => this.setState({ guestEmail: e.target.value })}
         />
+
         <FlatButton
           label="Add Guest"
           value="Add Guest"
@@ -251,16 +280,16 @@ class CreateEvent extends React.Component {
           placeholder="Pick a day and time"
           onChange={(time) => {
             let year = time.getFullYear()
-            let month = time.getMonth()
-            let day = time.getDay()
-            let date = year + '' + month + day
+            let month = ('' + (time.getMonth() + 1)).length === 1 ? '0' + (time.getMonth() + 1) : time.getMonth() + 1;
+            let day = ('' + time.getDate()).length === 1 ? '0' + time.getDate() : time.getDate();
+            let date = '' + year + month + day
 
             let hour = time.getHours()
             let minutes = time.getMinutes()
             let clockTime = hour + ':' + minutes
 
-            this.setState({ date: date })
-            this.setState({ time: clockTime  })
+            this.setState({ date: Number(date) })
+            this.setState({ time: clockTime  , dateTimeStart: time.toISOString()})
           }
         }
         />
@@ -296,7 +325,7 @@ class CreateEvent extends React.Component {
             onClick={() => {
               this.submitForm();
             }}
-            secondary="true"
+            secondary={true}
           />
       </div>
   </div>
@@ -305,63 +334,13 @@ class CreateEvent extends React.Component {
   }
 }
 
-const addEvent = gql`
-  mutation addEvent($name: String!, $host_id: Int!, $description: String!, $location: String!, $img: String, $time: String, $date: Int) {
-    addEvent(
-      name: $name
-      host_id: $host_id
-      description: $description
-      location: $location
-      img: $img,
-      time: $time,
-      date: $date
-    ) {
-      name
-      host_id
-      description
-      location
-      img
-      id
-      time
-      date
-    }
-  }
-`;
-
-const addItems = gql`
-  mutation addItems($itemNames: [String]!, $event_id: Int!) {
-    addItems(itemNames: $itemNames, event_id: $event_id) {
-      items {
-        id
-        name
-        user_id
-        event_id
-      }
-    }
-  }
-`;
-
-const addRecipients = gql`
-  mutation addRecipients($nameEmail: [String]!, $event_id: Int, $id: Int) {
-    addRecipients(nameEmail: $nameEmail, event_id: $event_id, id: $id) {
-      name
-    }
-  }
-`;
-
 const CreateEventWithMutations = compose(
   graphql(addEvent, { name: 'addEvent' }),
   graphql(addItems, { name: 'addItems' }),
   graphql(addRecipients, { name: 'addRecipients' })
 )(CreateEvent);
 
-CreateEvent.propTypes = {
-  addEvent: PropTypes.func.isRequired,
-  addItems: PropTypes.func.isRequired,
-  addRecipients: PropTypes.func.isRequired,
-  // history: ReactRouterPropTypes.history.isRequired,
-  currentUser: PropTypes.shape({}).isRequired,
-};
+
 
 
 export default withRouter(CreateEventWithMutations);

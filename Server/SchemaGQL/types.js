@@ -121,7 +121,9 @@ const ItemsType = new GraphQLObjectType({
   resolve(parentValue, args) {
     return db.items
       .getItemsByEventId(parentValue.event_id)
-      .then(item => item);
+      .then(item => item)
+      .catch(err => err)
+
   }
 });
 
@@ -138,23 +140,46 @@ const UserType = new GraphQLObjectType({
     accessToken: { type: GraphQLString },
     hash: { type: GraphQLString },
     guest_event_id: { type: GraphQLInt },
+    lastEvent: {
+      type: EventType, 
+      resolve(parentValue, args){
+        console.log('is last event working?')
+        return db.event.lastEvent(parentValue.id)
+      }
+    },
+    memberReply: {
+     type: GraphQLInt,
+     resolve(parentValue, args){
+       return db.event_attendee.checkReply(parentValue.id, parentValue.event_id)
+       .then(x =>  x[0].reply)
+       .catch(err => err)
+     }
+   },
     hostedEvents: {
       type: new GraphQLList(EventType),
       resolve(parentValue, args) {
-        return db.event.getHostedEvents(parentValue.id).catch(err => [32, err]);
+        return db.event.getHostedEvents(parentValue.id)
       }
     },
     pastEvents: {
       type: new GraphQLList(EventType),
-      resolve(parentValue, args) {
-        return db.event.getPastEvents(parentValue.id).catch(err => [33, err]);
+      async resolve(parentValue, args) {
+        let x = await db.event.getPastHostedEvents(parentValue.id)
+        return db.event.getPastAttendingEvents(parentValue.id).then(res => {
+            if (res && x){
+              console.log('res and x', Array.isArray(res), Array.isArray(x))
+              return res.concat(x)
+            } else {
+              console.log('fail')
+              return []
+            }
+          }).catch(err=> err)
       }
     },
     currentEvents: {
       type: new GraphQLList(EventType),
       resolve(parentValue, args) {
-        console.log('breaking after getcurrentevents')
-        return db.event.getCurrentEvents(parentValue.id).catch(err => [34, err]);
+        return db.event.getCurrentEvents(parentValue.id)
       }
     },
     guestEvent: {

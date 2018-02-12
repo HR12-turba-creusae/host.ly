@@ -15,8 +15,10 @@ router.get(
       'profile',
       'email',
       'https://mail.google.com/',
-      'https://www.google.com/m8/feeds/contacts'
-    ]
+      'https://www.google.com/m8/feeds/contacts',
+      'https://www.googleapis.com/auth/calendar'
+    ], 
+    access_type: 'offline'
   })
 );
 
