@@ -1,4 +1,5 @@
 # Host.ly - Event Registry Management Software
+host-ly.herokuapp.com 
 
 Host.ly is a social platform for communication between hosts/attendees to ensure minimal inventory duplication, whether it be for a wedding or something as informal as a beach weekend.
 
